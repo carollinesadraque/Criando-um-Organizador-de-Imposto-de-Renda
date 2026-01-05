@@ -1,0 +1,204 @@
+
+# -*- coding: utf-8 -*-
+"""
+Recria a planilha do anexo "Organizador de declaração de IR.xlsx"
+Abas: TITULAR, INFORMES, NOTAS
+Bibliotecas: openpyxl (obrigatória) e Pillow (opcional para criar um logo simples)
+"""
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+# (Opcional) criar um logo simples via Pillow
+try:
+    from PIL import Image as PILImage, ImageDraw, ImageFont
+    def criar_logo(path="logo_ir.png"):
+        img_w, img_h = 900, 220
+        img = PILImage.new("RGBA", (img_w, img_h), (255, 255, 255, 0))
+        draw = ImageDraw.Draw(img)
+        try:
+            font_title = ImageFont.truetype("DejaVuSans.ttf", 84)
+        except Exception:
+            font_title = ImageFont.load_default()
+        titulo = "🦁 Organizador de Declaração de IR"
+        # textbbox mede corretamente em Pillow moderno
+        bbox = draw.textbbox((0, 0), titulo, font=font_title)
+        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text(((img_w - w) / 2, (img_h - h) / 2), titulo, font=font_title, fill=(201, 164, 65, 255))
+        img.save(path)
+    criar_logo()
+    LOGO_PATH = "logo_ir.png"
+except Exception:
+    LOGO_PATH = None  # segue sem logo
+
+# === Estilos base ===
+fill_light = PatternFill(start_color="FFF6DD", end_color="FFF6DD", fill_type="solid")
+font_title = Font(size=14, bold=True, color="C9A441")
+font_header = Font(size=12, bold=True)
+font_normal = Font(size=11)
+center = Alignment(horizontal="center", vertical="center")
+left = Alignment(horizontal="left", vertical="center")
+thin = Side(style="thin", color="CCCCCC")
+border_thin = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+# === Cria workbook ===
+wb = Workbook()
+
+# ---------- ABA TITULAR ----------
+ws_titular = wb.active
+ws_titular.title = "TITULAR"
+
+# Título e cabeçalho
+ws_titular["A1"].value = "Organizador de Declaração de IR"
+ws_titular["A1"].font = font_title
+ws_titular["A2"].value = "Dados do Titular"
+ws_titular["A2"].font = font_header
+
+# Campos (label | valor)
+dados_titular = [
+    ("Nome", "Aline Lima Vicente LARA"),
+    ("CPF", "111.111.111"),
+    ("Data de nascimento", "01/01/1979"),
+    ("Título de eleitor", "111.111.11"),
+    ("Endereço", "Rua Edna Lorenço 00-Duque de Caxias - RJ"),
+    ("E-mail", "aline01020304050607@hotmail.com"),
+    ("Dependentes", "3"),
+    ("Cônjuge", "Antonio Lino Flores JR"),
+    ("Residente no exterior", "Não"),
+    ("Houve alteração da entrega anterior", "Não"),
+    ("Telefone", "(21) 90000-0000"),
+]
+
+start_row = 4
+for i, (campo, valor) in enumerate(dados_titular):
+    r = start_row + i
+    ws_titular.cell(row=r, column=1, value=campo).font = font_normal
+    ws_titular.cell(row=r, column=2, value=valor).font = font_normal
+    ws_titular.cell(row=r, column=1).alignment = left
+    ws_titular.cell(row=r, column=2).alignment = left
+    ws_titular.cell(row=r, column=1).border = border_thin
+    ws_titular.cell(row=r, column=2).border = border_thin
+
+# Larguras
+ws_titular.column_dimensions["A"].width = 32
+ws_titular.column_dimensions["B"].width = 48
+
+# ---------- ABA INFORMES ----------
+ws_informes = wb.create_sheet("INFORMES")
+
+ws_informes["A1"].value = "INFORME DE RENDIMENTOS BANCARIOS"
+ws_informes["A1"].font = font_title
+
+# Cabeçalhos
+ws_informes.append(["Banco", "Valor atual", "Anexo"])
+for c in ws_informes[2]:
+    c.font = font_header
+    c.fill = fill_light
+    c.alignment = center
+    c.border = border_thin
+
+# Linhas com dados (exatamente conforme anexo)
+linhas_informes = [
+    ("1 - Banco do Brasil", 1580, "BB122024"),
+    ("1 - Banco do Brasil", None, None),  # a planilha tem repetição de rótulo sem valor logo abaixo
+    ("104 - Caixa Econômica Federal", 1470, "CAIXA 1224"),
+    ("102 - XP Investimentos CCTVM S.A.", None, None),
+    ("380 - PicPay", 256, "PICPAY122024"),
+    ("104 - Caixa Econômica Federal", None, None),
+    ("336 - C6 Bank", 147, "C6122024"),
+    ("119 - Banco Western Union do Brasil", None, None),
+    ("33 - Banco Santander", 1682, "SANTAN1224"),
+    ("184 - Banco Itaú BBA S.A.", None, None),
+    ("341 - Itaú Unibanco", 649, "ITAU1224"),
+    ("197 - Stone Pagamentos", None, None),
+    ("260 - Nubank", 30, "NUB1224"),
+    ("208 - Banco BTG Pactual", None, None),
+    ("237 - Banco Bradesco", 48, "BRAD1224"),
+    ("212 - Banco Original", None, None),
+    ("41 - Banco do Estado do Rio Grande do Sul", 36, "BANRI1224"),
+    ("218 - Banco Bonsucesso", None, None),
+    ("422 - Banco Safra", 25, "SAFRA122024"),
+    ("229 - Banco Cruzeiro do Sul", None, None),
+    # Total aparece como rótulo solto a seguir (reproduzido)
+    ("5923", None, None),
+    ("237 - Banco Bradesco", None, None),
+    ("24 - Banco de Pernambuco", None, None),
+    ("241 - Banco Clássico", None, None),
+    ("250 - Banco de Crédito e Varejo (BCV)", None, None),
+    ("260 - Nubank", None, None),
+    ("29 - Banco do Estado do Rio de Janeiro", None, None),
+    ("290 - PagBank", None, None),
+    ("3 - Banco da Amazônia", None, None),
+    ("33 - Banco Santander", None, None),
+    ("336 - C6 Bank", None, None),
+    ("341 - Itaú Unibanco", None, None),
+    ("37 - Banco do Estado do Pará", None, None),
+    ("376 - Banco JPMorgan S.A.", None, None),
+    ("380 - PicPay", None, None),
+    ("4 - Banco do Nordeste do Brasil", None, None),
+    ("41 - Banco do Estado do Rio Grande do Sul", None, None),
+    ("422 - Banco Safra", None, None),
+    ("44 - Banco BVA", None, None),
+    ("464 - Banco Sumitomo Mitsui Brasileiro", None, None),
+]
+
+for banco, valor, anexo in linhas_informes:
+    ws_informes.append([banco, valor, anexo])
+
+# Ajustes visuais
+ws_informes.column_dimensions["A"].width = 40
+ws_informes.column_dimensions["B"].width = 16
+ws_informes.column_dimensions["C"].width = 26
+ws_informes.freeze_panes = "A3"
+
+# ---------- ABA NOTAS ----------
+ws_notas = wb.create_sheet("NOTAS")
+
+ws_notas["A1"].value = "HOLERITES: CNPJ'S, PREST. SERVIÇOS/SALARIO: ANO 2024"
+ws_notas["A1"].font = font_title
+
+# Cabeçalhos
+ws_notas.append(["Data", "Categoria", "Valor"])
+for c in ws_notas[2]:
+    c.font = font_header
+    c.fill = fill_light
+    c.alignment = center
+    c.border = border_thin
+
+linhas_notas = [
+    ("Janeiro", "HOLERITE", 3500),
+    ("Janeiro", "FREELANCE", 1200),
+    ("Fevereiro", "HOLERITE", 3500),
+    ("Fevereiro", "FREELANCE", 800),
+    ("Março", "HOLERITE", 3500),
+    ("Março", "FREELANCE", 500),
+    ("Abril", "HOLERITE", 3500),
+    ("Abril", "FREELANCE", 1400),
+    ("Maio", "HOLERITE", 3500),
+    ("Junho", "HOLERITE", 3800),
+    ("Junho", "FREELANCE", 1800),
+    ("Julho", "HOLERITE", 3800),
+    ("Julho", "FREELANCE", 1300),
+    ("Agosto", "HOLERITE", 3800),
+    ("Setembro", "HOLERITE", 3800),
+    ("Outubro", "HOLERITE", 4500),
+    ("Outubro", "FREELANCE", 1000),
+    ("Dezembro", "HOLERITE", 4500),
+    ("Dezembro", "FREELANCE", 1500),
+    ("TOTAL", None, 51200),
+]
+
+for data, categoria, valor in linhas_notas:
+    ws_notas.append([data, categoria, valor])
+
+# Ajustes
+ws_notas.column_dimensions["A"].width = 14
+ws_notas.column_dimensions["B"].width = 18
+ws_notas.column_dimensions["C"].width = 12
+ws_notas.freeze_panes = "A3"
+
+# ---------- Salvar ----------
+arquivo_saida = "Organizador_de_declaracao_de_IR_recriado.xlsx"
+wb.save(arquivo_saida)
+print(f"Arquivo gerado: {arquivo_saida}")
